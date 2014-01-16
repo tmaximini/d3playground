@@ -1,11 +1,16 @@
 
+var width, height, radius;
+
+function getRandomInt (min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+
 function makePie () {
 
   $(".svg-chart").empty();
 
-  var width = $(window).width() - 50,
-      height = $(window).height() < 500 ? $(window).height() : 500,
-      radius = Math.min(width, height) / 2;
+  width = $(window).width() - 50;
+  height = $(window).height() < 500 ? $(window).height() : 500;
+  radius = Math.min(width, height) / 2;
 
 
 
@@ -50,16 +55,31 @@ function makePie () {
   });
 }
 
+
+function drawCircles () {
+  circleRadii = [5, 8, 10];
+  var circles = d3.select(".svg-chart").selectAll('circle')
+                .data(circleRadii)
+              .enter().append("circle")
+                .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
+                .attr("cx", function() { return getRandomInt(-radius, radius); } )
+                .attr("cy", function() { return getRandomInt(-radius, radius); } )
+                .attr("r", function (d) { return d; });
+
+}
+
 var resizer;
 
 $(function () {
 
   makePie();
+  drawCircles();
   $(window).resize(function() {
     clearTimeout(resizer);
     resizer = setTimeout(function () {
       console.log('finished resize');
-      return makePie();
+      makePie();
+      drawCircles();
     }, 500);
   });
 });
