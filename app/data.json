@@ -1,0 +1,11 @@
+[
+  { "name": "illness" },
+  { "name": "hazard" },
+  { "name": "weakness" },
+  { "name": "blizzard" },
+  { "name": "snowstorm" },
+  { "name": "nuclear" },
+  { "name": "illumination" },
+  { "name": "sickness" },
+  { "name": "freakiness" }
+]

@@ -27,10 +27,42 @@ body {
   color: white;
 }
 
+.svg-chart {
+  margin-left: 20px;
+}
 
+.svg-chart rect {
+  fill: steelblue;
+}
 
+.svg-chart text {
+  fill: black;
+  font: 10px sans-serif;
+  text-anchor: end;
+}
 
+.bar {
+  fill: steelblue;
+}
 
+.axis text {
+  font: 10px sans-serif;
+}
+
+.arc path {
+  stroke: #fff;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
 
 
 /* Responsive: Portrait tablets and up */
