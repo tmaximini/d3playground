@@ -17,9 +17,7 @@ function makePie () {
 
 
 
-  var color = d3.scale.ordinal()
-      .range(['#98abc5', '#8a89a6', '#7b6888', '#6b486b', '#a05d56', '#d0743c', '#ff8c00']);
-
+  var color = d3.scale.category10();
 
   /*
   var color = function (color) {
@@ -29,12 +27,19 @@ function makePie () {
    */
 
   var outerArc = d3.svg.arc()
-      .outerRadius(radius)
-      .innerRadius(radius / 2);
+      .outerRadius(radius-20)
+      .innerRadius(30);
 
-  var innerArc = d3.svg.arc()
-      .outerRadius(radius / 2)
-      .innerRadius(0);
+  var textArc = d3.svg.arc()
+      .outerRadius(radius)
+      .innerRadius(radius-20);
+
+  var middle = d3.select('.svg-chart')
+      .append('circle')
+      .attr('r', 15)
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('fill', '#fff');
 
   var pie = d3.layout.pie()
       .sort(null)
@@ -71,22 +76,40 @@ function makePie () {
 
       });
 
+      var bubble = d3.layout.pack()
+          .sort(null)
+          .size([50, 50])
+          .padding(1.5);
+
 
       var g = svg.selectAll('.arc')
           .data(pie(data))
         .enter().append('g')
           .attr('class', 'arc');
 
-      var inner = svg.selectAll('.inner-arc')
+
+      var texts = svg.selectAll('.text-arc')
           .data(pie(data))
         .enter().append('g')
-          .attr('class', 'inner-arc');
+          .attr('class', 'text-arc');
+
 
 
       g.append('path')
         .attr('d', outerArc)
         .on('click', function(d) { console.log('clicked on segment ' + d.data.key); })
         .style('fill', function(d) { return color(d.data.name); });
+
+      texts.append('path')
+        .attr('id', function (d, i) { return 'path' + i.toString() } )
+        .attr('d', textArc)
+        .style('fill', function(d) { return color(d.data.name); })
+        .style('stroke', '#fff');
+
+      var text = texts.append('text')
+        .attr('dy', '15')
+        .attr('x', '75')
+        .style('fill', '#000')
 
 
       g.selectAll('.pie-spot')
@@ -111,17 +134,22 @@ function makePie () {
 
 
 
-      inner.append('path')
-          .attr('d', innerArc)
-          .style('fill', '#ccc')
-          .style('stroke', '#fff');
 
-      g.append('text')
-        .attr('transform', function(d) { return 'translate(' + outerArc.centroid(d) + ')'; })
-        .attr('dy', '.35em')
-        .style('text-anchor', 'middle')
-        .style('fill', '#fff')
-        .text(function(d) { return d.data.name; });
+
+
+
+
+      text.append('textPath')
+        .attr('stroke','black')
+        .style('font-size', '10px')
+        .style('font-weight', '100')
+        .style("text-anchor", "middle")
+        .text(function(d) {
+          var parentData = d3.select(this.parentNode).datum();
+          return parentData.data.name;
+        })
+        .attr('xlink:href', function (d, i) { return '#path' + i.toString() });
+
 
     });
 
