@@ -1,5 +1,5 @@
 
-var width, height, radius;
+var width, height, radius, outerArc, textArc;
 
 function getRandomInt (min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
@@ -26,11 +26,11 @@ function makePie () {
   }
    */
 
-  var outerArc = d3.svg.arc()
+  outerArc = d3.svg.arc()
       .outerRadius(radius-20)
       .innerRadius(30);
 
-  var textArc = d3.svg.arc()
+  textArc = d3.svg.arc()
       .outerRadius(radius)
       .innerRadius(radius-20);
 
@@ -44,11 +44,6 @@ function makePie () {
   var pie = d3.layout.pie()
       .sort(null)
       .value(function(d) { return d.value; });
-
-
-  var r = d3.scale.linear()
-      .domain ([0, 1])
-      .range([3, 25]);
 
 
   var getX = function (r, angle) {
@@ -69,7 +64,7 @@ function makePie () {
 
     d3.json('data/relevances.json', function (relevances) {
 
-      data.forEach(function(d) {
+      data.forEach(function(d, i) {
         d.value = (2 * Math.PI) / d.angleWidth * 100;
 
         // todo: check which relevances belong to which data / segment and attach them
@@ -94,7 +89,6 @@ function makePie () {
           .attr('class', 'text-arc');
 
 
-
       g.append('path')
         .attr('d', outerArc)
         .on('click', function(d) { console.log('clicked on segment ' + d.data.key); })
@@ -109,34 +103,35 @@ function makePie () {
       var text = texts.append('text')
         .attr('dy', '15')
         .attr('x', '75')
-        .style('fill', '#000')
+        .style('fill', '#000');
 
 
-      g.selectAll('.pie-spot')
+      var dot = g.selectAll('.pie-spot')
         .data(relevances)
-        .enter().append('circle')
+        .enter().append('g')
           .attr('class', 'pie-spot')
-          .attr('cx', function(d) {
+          .attr('transform', function (d) {
             var parentData = d3.select(this.parentNode).datum();
-            console.log(parentData);
-            var randomer = parentData.endAngle - ((parentData.endAngle - parentData.startAngle) * getRandomArbitrary(0.75, 1.25)) / 2;
-            return getX(radius * getRandomArbitrary(0.6, 0.9), randomer);
-          })
-          .attr('cy', function(d) {
-            var parentData = d3.select(this.parentNode).datum();
-            console.log(parentData);
-            var randomer = parentData.endAngle - ((parentData.endAngle - parentData.startAngle) * getRandomArbitrary(0.75, 1.25)) / 2;
-            return getY(radius * getRandomArbitrary(0.6, 0.9), randomer);
-          })
-          .attr('r', function(d) { return r(d.rating); })
-          .style('stroke', '#fff')
-          .on('click', function(d) { console.log('clicked on point ' + d.key); })
+            console.log(parentData.endAngle);
+            var randomer = parentData.endAngle - ((parentData.endAngle - parentData.startAngle)) * getRandomArbitrary(0.5, 0.85);
+            var cx = getX(radius * getRandomArbitrary(0.5, 0.85), randomer);
+            var cy = getY(radius * getRandomArbitrary(0.5, 0.85), randomer);
+            return 'translate(' + cx + ',' + height / 2 + ')';
+          });
 
+      dot.append('circle')
+        .attr('cx', 0)
+        .attr('cy', 0)
+        .attr('r', function(d) { return 10; })
+        .style('stroke', '#fff')
+        .style('fill', 'steelblue')
+        .on('click', function(d) { console.log('clicked on point ' + d.key); })
 
-
-
-
-
+      dot.append('text')
+        .attr("y", 5)
+        .attr("x", 10)
+        .style('text-anchor', 'start')
+        .text(function(d) { return d.key; });
 
 
       text.append('textPath')
@@ -224,7 +219,7 @@ $(function () {
     resizer = setTimeout(function () {
       console.log('finished resize');
       makePie();
-      drawCircles();
+      //drawCircles();
     }, 500);
   });
 });
