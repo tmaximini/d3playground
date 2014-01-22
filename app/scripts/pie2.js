@@ -1,11 +1,23 @@
 
-var width, height, radius, outerArc, textArc, segments;
+var width, height, radius, outerArc, textArc, segments, innerRadius;
+
+
+var segObj = {};
 
 function getRandomInt (min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
 function getRandomArbitrary(min, max) {
   return Math.random() * (max - min) + min;
 }
+
+function getX (r, angle) {
+  return Math.sin(angle) * r;
+};
+
+function getY (r, angle) {
+  return -Math.cos(angle) * r;
+};
+
 
 function makePie () {
 
@@ -14,17 +26,11 @@ function makePie () {
   width = $(window).width() - 50;
   height = $(window).height() < 500 ? $(window).height() : 500;
   radius = Math.min(width, height) / 2;
+  innerRadius = radius - 20;
 
 
 
   var color = d3.scale.category10();
-
-  /*
-  var color = function (color) {
-    var nr = +color;
-    return '#' + nr.toString(16);
-  }
-   */
 
   outerArc = d3.svg.arc()
       .outerRadius(radius-20)
@@ -45,19 +51,11 @@ function makePie () {
       .sort(null)
       .value(function(d) { return d.value; });
 
-
-  var getX = function (r, angle) {
-    return Math.sin(angle) * r;
-  };
-
-  var getY = function (r, angle) {
-    return -Math.cos(angle) * r;
-  };
-
   var svg = d3.select('.svg-chart')
       .attr('width', width)
       .attr('height', height)
     .append('g')
+      .attr('id', 'mainGroup')
       .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
 
   d3.json('data/viewSegments.json', function(error, data) {
@@ -69,14 +67,13 @@ function makePie () {
       data.forEach(function(d, i) {
         d.value = (2 * Math.PI) / d.angleWidth * 100;
 
+        d.startAngle = i * d.angleWidth;
+
+        segObj[d.key] = d;
+
         // todo: check which relevances belong to which data / segment and attach them
 
       });
-
-      var bubble = d3.layout.pack()
-          .sort(null)
-          .size([50, 50])
-          .padding(1.5);
 
 
       var g = svg.selectAll('.arc')
@@ -111,7 +108,6 @@ function makePie () {
         .style('fill', '#000');
 
 
-
       text.append('textPath')
         .attr('stroke','black')
         .style('font-size', '10px')
@@ -135,20 +131,37 @@ function drawCircles () {
 
   d3.json('data/relevances.json', function (relevances) {
 
+    relevances.forEach(function (r, i) {
+
+      //segObj[r.segment_id].startAngle = i * segObj[r.segment_id].angleWidth;
+
+      console.log(segObj);
+
+      r.middleAngle = segObj[r.segment_id].startAngle + segObj[r.segment_id].angleWidth / 2;
+      r.x = getX(radius - 50, r.middleAngle);
+      r.y = getY(radius - 50, r.middleAngle);
+      r.padX = 0;
+      r.padY = 0;
+      console.log(r)
+    });
+
     var fill = d3.scale.category10();
 
     var force = d3.layout.force()
         .nodes(relevances)
-        .size([width, height])
+        .size([Math.min(width, height), Math.min(width, height)])
         .on("tick", tick)
         .start();
 
-    var svg = d3.select('.svg-chart');
+    var svg = d3.select('#mainGroup');
 
-    var node = svg.selectAll(".node")
+    var nodes = svg.selectAll(".node")
         .data(relevances)
-      .enter().append("circle")
-        .attr("class", "node")
+      .enter().append("g")
+        //.attr('transform', 'translate( ' + -radius/2 + ', ' + -radius/2 + ')')
+        .attr("class", "node");
+
+    var circles = nodes.append('circle')
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; })
         .attr("r", 8)
@@ -156,6 +169,13 @@ function drawCircles () {
         .style("stroke", function(d, i) { return d3.rgb(fill(i & 3)).darker(2); })
         .call(force.drag)
         .on("mousedown", function() { d3.event.stopPropagation(); });
+
+    var texts = nodes.append('text')
+        .attr('dy', '15')
+        .attr('x', '75')
+        .style('fill', '#000')
+        .style('text-anchor', 'start')
+        .text(function (d) { return d.key });
 
     svg.style("opacity", 1e-6)
       .transition()
@@ -165,23 +185,33 @@ function drawCircles () {
     //d3.select("body")
     //    .on("mousedown", mousedown);
 
+    console.log(segObj);
+
     function tick(e) {
 
-      var k = 6 * e.alpha;
+      var k = e.alpha;
+
+      var circleX = [];
+      var circleY = [];
 
       relevances.forEach(function(o, i) {
-
-
-      if (o.segment_id === segments[i].key) {
-        o.y += i & 1 ? k : -k;
-        o.x += i & 2 ? k : -k;
-      }
-
-
+        o.padX += i & 1 ? k : -k;
+        o.padY += i & 2 ? k : -k;
       });
 
-      node.attr("cx", function(d) { return d.x; })
-          .attr("cy", function(d) { return d.y; });
+      circles.attr("cx", function(d, i) {
+          circleX[i] = getX(innerRadius * 0.75, d.middleAngle);
+          circleX[i] += d.padX;
+         return circleX[i];
+        })
+        .attr("cy", function(d, i) {
+          circleY[i] = getY(innerRadius * 0.75, d.middleAngle);
+          circleY[i] += d.padY;
+          return circleY[i]
+        });
+
+      texts.attr("x", function(d, i) { return circleX[i] + 10; })
+          .attr("dy", function(d, i) { return (circleY[i]) + 5; });
     }
 
   });
@@ -192,13 +222,13 @@ var resizer;
 
 $(function () {
   makePie();
-  drawCircles();
+  setTimeout(drawCircles, 1000);
   $(window).resize(function() {
     clearTimeout(resizer);
     resizer = setTimeout(function () {
       console.log('finished resize');
       makePie();
-      drawCircles();
+      setTimeout(drawCircles, 1000);
     }, 500);
   });
 });
