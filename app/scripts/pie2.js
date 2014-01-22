@@ -140,14 +140,19 @@ function drawCircles () {
       r.middleAngle = segObj[r.segment_id].startAngle + segObj[r.segment_id].angleWidth / 2;
       r.x = getX(radius - 50, r.middleAngle);
       r.y = getY(radius - 50, r.middleAngle);
-      r.padX = 0;
-      r.padY = 0;
+
+      segObj[r.segment_id].center = {
+        x: r.x,
+        y: r.y
+      };
+
       console.log(r)
     });
 
     var fill = d3.scale.category10();
 
     var force = d3.layout.force()
+        .gravity(0)
         .nodes(relevances)
         .size([Math.min(width, height), Math.min(width, height)])
         .on("tick", tick)
@@ -189,24 +194,23 @@ function drawCircles () {
 
     function tick(e) {
 
-      var k = e.alpha;
+      var k = e.alpha * .1;
 
       var circleX = [];
       var circleY = [];
 
-      relevances.forEach(function(o, i) {
-        o.padX += i & 1 ? k : -k;
-        o.padY += i & 2 ? k : -k;
+      relevances.forEach(function(node, i) {
+        var center = segObj[node.segment_id].center;
+        node.x += (center.x - node.x) * k;
+        node.y += (center.y - node.y) * k;
       });
 
       circles.attr("cx", function(d, i) {
-          circleX[i] = getX(innerRadius * 0.75, d.middleAngle);
-          circleX[i] += d.padX;
+          circleX[i] = d.x;
          return circleX[i];
         })
         .attr("cy", function(d, i) {
-          circleY[i] = getY(innerRadius * 0.75, d.middleAngle);
-          circleY[i] += d.padY;
+          circleY[i] = d.y;
           return circleY[i]
         });
 
