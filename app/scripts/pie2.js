@@ -28,8 +28,6 @@ function makePie () {
   radius = Math.min(width, height) / 2;
   innerRadius = radius - 20;
 
-
-
   var color = d3.scale.category10();
 
   outerArc = d3.svg.arc()
@@ -65,9 +63,21 @@ function makePie () {
     d3.json('data/relevances.json', function (relevances) {
 
       data.forEach(function(d, i) {
+
+        // correct startAngles
+        d.startAngle = i * d.angleWidth;
+
+        // get pie value
         d.value = (2 * Math.PI) / d.angleWidth * 100;
 
-        d.startAngle = i * d.angleWidth;
+        // get the middle angle of the segment
+        d.middleAngle = d.startAngle + d.angleWidth / 2;
+        // get a centered point inside the segment
+
+        d.center = {
+          x: getX(radius / 2, d.middleAngle),
+          y: getY(radius / 2, d.middleAngle)
+        };
 
         segObj[d.key] = d;
 
@@ -128,26 +138,7 @@ function makePie () {
 
 function drawCircles () {
 
-
   d3.json('data/relevances.json', function (relevances) {
-
-    relevances.forEach(function (r, i) {
-
-      //segObj[r.segment_id].startAngle = i * segObj[r.segment_id].angleWidth;
-
-      console.log(segObj);
-
-      r.middleAngle = segObj[r.segment_id].startAngle + segObj[r.segment_id].angleWidth / 2;
-      r.x = getX(radius - 50, r.middleAngle);
-      r.y = getY(radius - 50, r.middleAngle);
-
-      segObj[r.segment_id].center = {
-        x: r.x,
-        y: r.y
-      };
-
-      console.log(r)
-    });
 
     var fill = d3.scale.category10();
 
@@ -187,11 +178,6 @@ function drawCircles () {
         .duration(1000)
         .style("opacity", 1);
 
-    //d3.select("body")
-    //    .on("mousedown", mousedown);
-
-    console.log(segObj);
-
     function tick(e) {
 
       var k = e.alpha * .1;
@@ -205,6 +191,7 @@ function drawCircles () {
         node.y += (center.y - node.y) * k;
       });
 
+      // update circle positions and remember them
       circles.attr("cx", function(d, i) {
           circleX[i] = d.x;
          return circleX[i];
@@ -214,8 +201,9 @@ function drawCircles () {
           return circleY[i]
         });
 
+      // update text positions as well
       texts.attr("x", function(d, i) { return circleX[i] + 10; })
-          .attr("dy", function(d, i) { return (circleY[i]) + 5; });
+          .attr("dy", function(d, i) { return circleY[i] + 5; });
     }
 
   });
