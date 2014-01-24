@@ -1,6 +1,7 @@
 
 var width, height, radius, outerArc, textArc, segments, innerRadius;
 
+var onlySegmentsWithSymptoms = false;
 
 var segObj = {};
 
@@ -18,13 +19,19 @@ function getY (r, angle) {
   return -Math.cos(angle) * r;
 };
 
+function toggleRenderMode () {
+  onlySegmentsWithSymptoms = !onlySegmentsWithSymptoms;
+  makePie();
+  setTimeout(drawCircles, 200);
+}
+
 
 function makePie () {
 
   $('.svg-chart').empty();
 
   width = $(window).width() - 50;
-  height = $(window).height() < 500 ? $(window).height() : 500;
+  height = $(window).height() - 100;
   radius = Math.min(width, height) / 2;
   innerRadius = radius - 20;
 
@@ -56,28 +63,85 @@ function makePie () {
       .attr('id', 'mainGroup')
       .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
 
+  var renderData = [];
+
   d3.json('data/viewSegments.json', function(error, data) {
 
     segments = data;
+    var segmentsWithSymptomsCount = 0;
+
+    var usedSegments = [];
 
     d3.json('data/relevances.json', function (relevances) {
 
-      data.forEach(function(d, i) {
+      relevances.forEach(function (r) {
+        usedSegments = relevances.map(function (r) { return r.segment_id });
+      });
 
-        // correct startAngles
-        d.startAngle = i * d.angleWidth;
+      usedSegments = jQuery.unique(usedSegments);
 
-        // get pie value
-        d.value = (2 * Math.PI) / d.angleWidth * 100;
+      segments.forEach(function(d, i) {
 
-        // get the middle angle of the segment
-        d.middleAngle = d.startAngle + d.angleWidth / 2;
-        // get a centered point inside the segment
+        if (onlySegmentsWithSymptoms) {
 
-        d.center = {
-          x: getX(radius / 2, d.middleAngle),
-          y: getY(radius / 2, d.middleAngle)
-        };
+          if (usedSegments.indexOf(d.key) !== -1) {
+
+            d.angleWidth = (2 * Math.PI) / usedSegments.length;
+
+            // correct startAngles
+            d.startAngle = segmentsWithSymptomsCount * d.angleWidth;
+
+            // get pie value
+            d.value = (2 * Math.PI) / d.angleWidth * 100;
+
+            // get the middle angle of the segment
+            d.middleAngle = d.startAngle + d.angleWidth / 2;
+
+            console.log('middle angle of ' + d.key + ': ' + d.middleAngle);
+            console.log('angle width of ' + d.key + ': ' + d.angleWidth);
+
+            // get a centered point inside the segment
+
+            d.center = {
+              x: getX(radius / 2, d.middleAngle),
+              y: getY(radius / 2, d.middleAngle)
+            };
+
+            renderData.push(d);
+
+            segObj[d.key] = d;
+
+            segmentsWithSymptomsCount++;
+
+          } else {
+            d.angleWidth = 0;
+            d.middleAngle = 0;
+            d.value = 0;
+          }
+
+        }
+        else {
+
+          // correct startAngles
+          d.startAngle = i * d.angleWidth;
+
+          // get pie value
+          d.value = (2 * Math.PI) / d.angleWidth * 100;
+
+          // get the middle angle of the segment
+          d.middleAngle = d.startAngle + d.angleWidth / 2;
+          // get a centered point inside the segment
+
+          d.center = {
+            x: getX(radius / 2, d.middleAngle),
+            y: getY(radius / 2, d.middleAngle)
+          };
+
+          renderData.push(d);
+
+        }
+
+
 
         segObj[d.key] = d;
 
@@ -87,19 +151,20 @@ function makePie () {
 
 
       var g = svg.selectAll('.arc')
-          .data(pie(data))
+          .data(pie(renderData))
         .enter().append('g')
           .attr('class', 'arc');
 
 
       var texts = svg.selectAll('.text-arc')
-          .data(pie(data))
+          .data(pie(renderData))
         .enter().append('g')
           .attr('class', 'text-arc');
 
 
       g.append('path')
         .attr('d', outerArc)
+        .each(function(d) { this._current = d; })
         .attr('id', function (d) {
           return d.data.key;
         })
@@ -120,7 +185,7 @@ function makePie () {
 
       text.append('textPath')
         .attr('stroke','black')
-        .style('font-size', '10px')
+        .style('font-size', radius > 250 ? '12px' : '10px')
         .style('font-weight', '100')
         .style("text-anchor", "middle")
         .text(function(d) {
@@ -128,7 +193,6 @@ function makePie () {
           return parentData.data.name;
         })
         .attr('xlink:href', function (d, i) { return '#path' + i.toString() });
-
 
     });
 
@@ -143,11 +207,14 @@ function drawCircles () {
     var fill = d3.scale.category10();
 
     var force = d3.layout.force()
-        .gravity(0)
+        .gravity(0.0001)
+        .charge(-75)
         .nodes(relevances)
         .size([Math.min(width, height), Math.min(width, height)])
         .on("tick", tick)
         .start();
+
+
 
     var svg = d3.select('#mainGroup');
 
@@ -160,7 +227,7 @@ function drawCircles () {
     var circles = nodes.append('circle')
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; })
-        .attr("r", 8)
+        .attr("r", radius * 0.025)
         .style("fill", function(d, i) { return fill(i & 3); })
         .style("stroke", function(d, i) { return d3.rgb(fill(i & 3)).darker(2); })
         .call(force.drag)
@@ -169,14 +236,26 @@ function drawCircles () {
     var texts = nodes.append('text')
         .attr('dy', '15')
         .attr('x', '75')
+        .style('font-size', radius > 250 ? '12px' : '10px')
         .style('fill', '#000')
         .style('text-anchor', 'start')
         .text(function (d) { return d.key });
 
+
+    /*
     svg.style("opacity", 1e-6)
       .transition()
         .duration(1000)
         .style("opacity", 1);
+    */
+
+    var safety = 0;
+    while (force.alpha() > 0.05) { // You'll want to try out different, "small" values for this
+        force.tick();
+        if(safety++ > 500) {
+          break;// Avoids infinite looping in case this solution was a bad idea
+        }
+    }
 
     function tick(e) {
 
@@ -185,11 +264,19 @@ function drawCircles () {
       var circleX = [];
       var circleY = [];
 
+
       relevances.forEach(function(node, i) {
         var center = segObj[node.segment_id].center;
         node.x += (center.x - node.x) * k;
         node.y += (center.y - node.y) * k;
       });
+
+      var q = d3.geom.quadtree(relevances),
+          i = 0,
+          n = nodes.length;
+      while (++i < n) {
+        q.visit(collide(relevances[i]));
+      }
 
       // update circle positions and remember them
       circles.attr("cx", function(d, i) {
@@ -202,8 +289,8 @@ function drawCircles () {
         });
 
       // update text positions as well
-      texts.attr("x", function(d, i) { return circleX[i] + 10; })
-          .attr("dy", function(d, i) { return circleY[i] + 5; });
+      texts.attr("x", function(d, i) { return circleX[i] + radius * 0.0275; })
+          .attr("dy", function(d, i) { return circleY[i] + radius * 0.0135; });
     }
 
   });
