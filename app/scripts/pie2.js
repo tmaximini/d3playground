@@ -92,13 +92,11 @@ function makePie () {
             d.startAngle = segmentsWithSymptomsCount * d.angleWidth;
 
             // get pie value
-            d.value = (2 * Math.PI) / d.angleWidth * 100;
+            d.value = 1;
+            d.endValue = (2 * Math.PI) / d.angleWidth * 100;
 
             // get the middle angle of the segment
             d.middleAngle = d.startAngle + d.angleWidth / 2;
-
-            console.log('middle angle of ' + d.key + ': ' + d.middleAngle);
-            console.log('angle width of ' + d.key + ': ' + d.angleWidth);
 
             // get a centered point inside the segment
 
@@ -126,7 +124,8 @@ function makePie () {
           d.startAngle = i * d.angleWidth;
 
           // get pie value
-          d.value = (2 * Math.PI) / d.angleWidth * 100;
+          d.value = 1;
+          d.endValue = (2 * Math.PI) / d.angleWidth * 100;
 
           // get the middle angle of the segment
           d.middleAngle = d.startAngle + d.angleWidth / 2;
@@ -218,6 +217,27 @@ function drawCircles () {
 
     var svg = d3.select('#mainGroup');
 
+    var radiate = function (pos, element) {
+      d3.range(3).forEach(function (d) {
+        element.append('circle')
+          .attr( {
+            cx: pos[0],
+            cy: pos[1],
+            r: 0
+          } )
+          .style('opacity', '1')
+          .style('fill', 'none')
+          .style('stroke', 'red')
+          .style('stroke-width', '2px')
+          .transition()
+          .duration(1000)
+          .delay(d * 50)
+            .attr('r', 50)
+            .style('opacity', '0.00001')
+            .remove()
+      });
+    };
+
     var nodes = svg.selectAll(".node")
         .data(relevances)
       .enter().append("g")
@@ -228,6 +248,7 @@ function drawCircles () {
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; })
         .attr("r", radius * 0.025)
+        .on('click', function () { radiate(d3.mouse(this), d3.select(this.parentNode)); })
         .style("fill", function(d, i) { return fill(i & 3); })
         .style("stroke", function(d, i) { return d3.rgb(fill(i & 3)).darker(2); })
         .call(force.drag)

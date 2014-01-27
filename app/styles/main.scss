@@ -71,6 +71,24 @@ body {
   display: none;
 }
 
+.brushed .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+circle {
+  -webkit-transition: fill-opacity 125ms ease-in-out;
+}
+
+.selecting circle {
+  fill-opacity: 0.25;
+}
+
+circle.selected {
+  stroke: red;
+}
+
 
 /* Responsive: Portrait tablets and up */
 @media screen and (min-width: 768px) {
