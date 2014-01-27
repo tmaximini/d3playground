@@ -178,15 +178,19 @@ function makePie () {
 
       var text = texts.append('text')
         .attr('dy', '15')
-        .attr('x', '75')
-        .style('fill', '#000');
+        .attr('dy', '15')
+        .style('fill', '#000')
+        .style('font-size', radius > 250 ? '12px' : '10px')
+        .style('font-weight', '100')
+        .attr('text-rendering', 'geometricPrecision')
+        .attr('alignment-baseline', 'middle')
+        .attr('dominant-baseline', 'middle');
 
 
       text.append('textPath')
         .attr('stroke','black')
-        .style('font-size', radius > 250 ? '12px' : '10px')
-        .style('font-weight', '100')
-        .style("text-anchor", "middle")
+        .attr('text-anchor', 'middle')
+        .attr('startOffset', '25%')
         .text(function(d) {
           var parentData = d3.select(this.parentNode).datum();
           return parentData.data.name;
