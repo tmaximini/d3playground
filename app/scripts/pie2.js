@@ -28,14 +28,14 @@ function toggleRenderMode () {
 
 function makePie () {
 
-  $('.svg-chart').empty();
+  //$('.svg-chart').empty();
 
   width = $(window).width() - 50;
   height = $(window).height() - 100;
   radius = Math.min(width, height) / 2;
   innerRadius = radius - 20;
 
-  var color = d3.scale.category10();
+  var color = d3.scale.category20c();
 
   outerArc = d3.svg.arc()
       .outerRadius(radius-20)
