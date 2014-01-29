@@ -148,11 +148,28 @@ function makePie () {
 
       });
 
+      var arcTween = function (a) {
+        var i = d3.interpolate(this._current, a);
+        this._current = i(0);
+        return function(t) {
+          return outerArc(i(t));
+        };
+      };
+
 
       var g = svg.selectAll('.arc')
           .data(pie(renderData))
-        .enter().append('g')
-          .attr('class', 'arc');
+        .enter().append('path')
+          .attr('class', 'arc')
+          .attr('d', outerArc)
+          .each(function(d) { this._current = d; })
+          .attr('id', function (d) {
+            return d.data.key;
+          })
+          .on('click', function(d) { console.log('clicked on segment ' + d.data.key); })
+          .style('fill', function(d) { return color(d.data.name); });
+
+      innerPaths.transition().duration(750).attrTween("d", arcTween);
 
 
       var texts = svg.selectAll('.text-arc')
@@ -161,14 +178,7 @@ function makePie () {
           .attr('class', 'text-arc');
 
 
-      g.append('path')
-        .attr('d', outerArc)
-        .each(function(d) { this._current = d; })
-        .attr('id', function (d) {
-          return d.data.key;
-        })
-        .on('click', function(d) { console.log('clicked on segment ' + d.data.key); })
-        .style('fill', function(d) { return color(d.data.name); });
+
 
       texts.append('path')
         .attr('id', function (d, i) { return 'path' + i.toString() } )
@@ -219,14 +229,6 @@ function drawCircles () {
         .size([Math.min(width, height), Math.min(width, height)])
         .on("tick", tick)
         .start();
-
-    var force2 = d3.layout.force()
-          .nodes(labels)
-          .gravity(0)
-          .charge(-100)
-          .size([Math.min(width, height), Math.min(width, height)])
-          .start();
-
 
 
     var svg = d3.select('#mainGroup');
