@@ -7,13 +7,15 @@ var width = 600,
       .attr({ width: width, height: height })
 
 
-var random = d3.random.normal(.5, .11),
-    data = d3.range(800).map(function (i) {
-      return {
-        x: random(),
-        y: random()
-      }
-    });
+var random = d3.random.normal(.5, .11);
+
+
+var data = d3.range(800).map(function (i) {
+  return {
+    x: random(),
+    y: random()
+  }
+});
 
 var x = d3.scale.linear()
           .range([50, width - 50]);
